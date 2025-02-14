@@ -1,0 +1,49 @@
+# Byte-compiled files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Virtual environment directories
+venv/
+env/
+.venv/
+.env/
+
+# IDE configurations
+.idea/
+.vscode/
+
+# Logs and debug files
+*.log
+*.out
+*.err
+
+# Unit test coverage reports
+.coverage
+*.cover
+coverage/
+htmlcov/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Build directories
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Pipenv and Poetry files
+Pipfile
+Pipfile.lock
+poetry.lock
+
+# Environment files
+.env
+*.env
+firebase-cred.json

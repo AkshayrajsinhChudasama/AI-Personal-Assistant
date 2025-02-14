@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "897606930624",
+    "project_id": "personalassistantchatbot",
+    "storage_bucket": "personalassistantchatbot.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:897606930624:android:aade14b2bf525adcf49d25",
+        "android_client_info": {
+          "package_name": "com.example.chatbot_ui"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "897606930624-iuap9br9jv4sfeov6mimf6r5a64lcrmq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.chatbot_ui",
+            "certificate_hash": "f346738ee073edfdde09d90599940fdbc1be6b23"
+          }
+        },
+        {
+          "client_id": "897606930624-at069lip1932ioncum5bgcqsl3j5mafc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1YMOYfDwjcJtTgrxCOnKGh0ykBVZMIsA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "897606930624-at069lip1932ioncum5bgcqsl3j5mafc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
