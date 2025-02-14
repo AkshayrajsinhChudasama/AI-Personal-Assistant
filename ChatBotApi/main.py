@@ -153,6 +153,7 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
                     response['nInfo']['delete'].append(obj.get('_id'))
                 response['intent'] = 'new'
         await insertMessage(email,response['text'],'bot')
+        print(response)
         return response
     except Exception as e:
         logger.error(f"Unexpected error: {e}")

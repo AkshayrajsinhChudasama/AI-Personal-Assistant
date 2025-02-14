@@ -3,11 +3,8 @@ import 'dart:io';
 import 'package:chatbot_ui/services/api.dart';
 import 'package:crypto/crypto.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:android_intent_plus/android_intent.dart';
-import 'package:android_intent_plus/flag.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:timezone/data/latest.dart' as tz;
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import 'notificationController.dart';
@@ -37,9 +34,15 @@ class NotificationService {
     );
 
     tz.initializeTimeZones();
-    if (Platform.isAndroid) await _requestExactAlarmPermission();
+    if (Platform.isAndroid) await requestNotificationPermission();
   }
+  Future<void> requestNotificationPermission() async {
+    bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
 
+    if (!isAllowed) {
+      await AwesomeNotifications().requestPermissionToSendNotifications();
+    }
+  }
   NotificationChannel _defaultNotificationChannel() {
     return NotificationChannel(
       channelKey: 'scheduled_channel_id',
@@ -277,29 +280,5 @@ class NotificationService {
   Future<void> cancelAllNotifications() async {
     print("Cancelling all notifications");
     await AwesomeNotifications().cancelAll();
-  }
-
-  Future<void> _requestExactAlarmPermission() async {
-    if (Platform.isAndroid && await _isAndroid12OrHigher()) {
-      print("Requesting exact alarm permission");
-      const intent = AndroidIntent(
-        action: 'android.settings.REQUEST_SCHEDULE_EXACT_ALARM',
-        flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
-      );
-      await intent.launch();
-    }
-  }
-
-  Future<bool> _isAndroid12OrHigher() async {
-    try {
-      final int sdkInt = await const MethodChannel('flutter/device_info')
-              .invokeMethod<int>('getSdkInt') ??
-          0;
-      print("Android SDK version: $sdkInt");
-      return sdkInt >= 31;
-    } catch (e) {
-      print("Error checking Android version: $e");
-      return false;
-    }
   }
 }

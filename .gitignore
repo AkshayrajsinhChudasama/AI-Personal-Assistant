@@ -46,4 +46,3 @@ poetry.lock
 # Environment files
 .env
 *.env
-firebase-cred.json

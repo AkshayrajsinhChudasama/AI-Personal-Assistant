@@ -168,8 +168,8 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
           children: [
             Positioned.fill(
               child: Image.asset(
-                'lib/assets/background.jpg', // Replace with your image path
-                fit: BoxFit.cover, // Adjust to fill the screen
+                'lib/assets/background.jpg',
+                fit: BoxFit.cover,
               ),
             ),
             Padding(

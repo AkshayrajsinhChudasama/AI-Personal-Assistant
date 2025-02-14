@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:chatbot_ui/services/notification.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -102,6 +103,24 @@ class ChatAPI {
 
             // Calculate the time for the chat notification (start time + 20% of duration)
             DateTime chatNotificationTime = startDateTime.add(twentyPercentDuration);
+
+            bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
+
+            // 🔹 If not allowed, request permission
+            if (!isAllowed) {
+              print("🔔 Notification permission is not granted. Requesting now...");
+
+              // Request permission
+              await AwesomeNotifications().requestPermissionToSendNotifications();
+
+              // 🔹 Re-check after requesting
+              bool isNowAllowed = await AwesomeNotifications().isNotificationAllowed();
+
+              if (!isNowAllowed) {
+                print("🚫 Notification permission denied. Cannot schedule notification.");
+                return {'text': "Changes saved to database but notification not allowed. you can allow notification in the app settings."};
+              }
+            }
 
             // Check if it's a daily event or a one-time event
             if (data['payload']['daily'] != null && data['payload']['daily'] == true) {

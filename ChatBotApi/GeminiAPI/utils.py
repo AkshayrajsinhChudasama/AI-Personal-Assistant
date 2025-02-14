@@ -37,6 +37,7 @@ def generalDialog(user_input,chat_history):
         - important -> take confirmation from user that the action can not be undone and specify task that you are going to delete.
     - if user wants to retrive task then give in setence format rather than json format.
     - for performing corrsponding action to database before response sended to user make dbAction = action to be performed and isInfoIncomplete = False.
+    - never specify anyting regarding Changes saved to database but notification not allowed. you can allow notification in the app settings. in your response.
     - Context:
       - Current Date: {current_date} ({current_day})
       - Current Time: {current_time}
