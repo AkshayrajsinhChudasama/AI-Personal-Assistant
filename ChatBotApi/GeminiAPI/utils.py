@@ -9,7 +9,7 @@ load_dotenv('./config.env')
 GEMINI_KEY = os.getenv("GEMINI_KEY")
 
 genai.configure(api_key=GEMINI_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-2.0-flash")
 
 now = datetime.now()
 current_date = now.strftime("%Y-%m-%d")  
@@ -18,10 +18,14 @@ current_time = now.strftime("%H:%M")
 
 def generalDialog(user_input,chat_history):
   prompt = f"""
-    - you can provide answers according to your knowledge on the top of that you are a personal assistant bot.
-    - you are managing the user's tasks.
+
+     You are a helpful and versatile assistant. You have to answer general knowledge questions, manage user tasks, and handle calendar requests. 
+    
+    
     - can not do multiple task at a time.
     - based on user query you can do following actions
+      - answer any questions user have and try to help according to your knowledge.
+      additionally you can
       - add task into the calendar (for this start dateTime and end dateTime required)
       - update specific task
       - delete specific task
@@ -39,7 +43,7 @@ def generalDialog(user_input,chat_history):
     - for performing corrsponding action to database before response sended to user make dbAction = action to be performed and isInfoIncomplete = False.
     - never specify anyting regarding Changes saved to database but notification not allowed. you can allow notification in the app settings. in your response.
     - Context:
-      - Current Date: {current_date} ({current_day})
+      - Today Date and Day: {current_date} ({current_day})
       - Current Time: {current_time}
       - Previous Conversation: {chat_history}
       - User Input: "{user_input}"
@@ -184,26 +188,6 @@ def conversaction(msg,history):
   extracted_data = json.loads(eresult.text)
   return extracted_data
 
-# def messageGeneratorForInt(task):
-#   prompt = f"""
-#     # you are beautiful message generator
-#     - 
-#     - Output response
-#     {{
-#       "title":"title of message."
-#       "body":"body of message."
-#     }}
-#   """
-#   eresult = model.generate_content(
-#             prompt,
-#             generation_config=genai.GenerationConfig(
-#                 response_mime_type="application/json"
-#             ),
-#         )
-  
-#   extracted_data = json.loads(eresult.text)
-#   return extracted_data
-
 def check_task_conflict(new_task, existing_tasks):
     print('---------------------------------------------------------------------------------------------------')
     print(new_task, existing_tasks)
@@ -231,3 +215,4 @@ def check_task_conflict(new_task, existing_tasks):
         return {"isConflict": True, "conflicting_tasks": conflicting_tasks}
     else:
         return {"isConflict": False, "message": "No conflict"}
+
