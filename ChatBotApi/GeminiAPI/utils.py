@@ -110,13 +110,14 @@ def messageGenerator(Task):
   extracted_data = json.loads(eresult.text)
   return extracted_data
 
-def conflictChecker(newTask,dataResult,intent):
+def conflictChecker(conflictResult,dataResult,intent):
   prompt = f"""
-    # first task : you are conflict checker and user wants to add task/update task.
-    - you are given with list of task already added and new task/updated task that user wants to add/update.
-    - check precisely every minute is important.
-    - find conflit if any .
-    - ex. you want to add new meeting but it conflict with the another task.
+    # first task : you are conflict checker.
+
+    - you are given with list of task already added and conflict information.
+    - give output isConflict = true if result is true else false;
+    - in text give message need to output to user. 
+    - for given task id in conflict infor find from dataresult and frame beautiful msg without including task id.
 
     # second task : you are message provide which is creative and beautifull to the given task.
     - give title and body as a output.
@@ -126,9 +127,10 @@ def conflictChecker(newTask,dataResult,intent):
     - eg. how meeting is going,need any help kind of questoins.
 
     - Context
-      - intent:{intent}
+      - Conflict information:{conflictResult}
       - dataResult:{dataResult}
-      - newTask/updatedTask:{newTask}
+      - intent:{intent}
+
     - Output response
     {{
       
@@ -201,3 +203,31 @@ def conversaction(msg,history):
   
 #   extracted_data = json.loads(eresult.text)
 #   return extracted_data
+
+def check_task_conflict(new_task, existing_tasks):
+    print('---------------------------------------------------------------------------------------------------')
+    print(new_task, existing_tasks)
+    
+    new_task_start = datetime.strptime(f"{new_task['startdate']} {new_task['starttime']}", "%Y-%m-%d %H:%M")
+    new_task_end = datetime.strptime(f"{new_task['enddate']} {new_task['endtime']}", "%Y-%m-%d %H:%M")
+    
+    conflicting_tasks = []
+
+    for task in existing_tasks:
+        task_start = datetime.strptime(f"{task['task']['startdate']} {task['task']['starttime']}", "%Y-%m-%d %H:%M")
+        task_end = datetime.strptime(f"{task['task']['enddate']} {task['task']['endtime']}", "%Y-%m-%d %H:%M")
+
+        if not task['task']['daily']:
+            if (new_task_start < task_end and new_task_end > task_start): 
+                conflicting_tasks.append(f"Conflict with regular task: {task['task']['task']} (ID: {task['task_id']})")
+
+        if task['task']['daily']:
+            task_start_time = datetime.strptime(f"2025-02-14 {task['task']['starttime']}", "%Y-%m-%d %H:%M")
+            task_end_time = datetime.strptime(f"2025-02-14 {task['task']['endtime']}", "%Y-%m-%d %H:%M")
+            if (new_task_start.time() < task_end_time.time() and new_task_end.time() > task_start_time.time()):
+                conflicting_tasks.append(f"Conflict with daily task: {task['task']['task']} (ID: {task['task_id']})")
+    
+    if conflicting_tasks:
+        return {"isConflict": True, "conflicting_tasks": conflicting_tasks}
+    else:
+        return {"isConflict": False, "message": "No conflict"}

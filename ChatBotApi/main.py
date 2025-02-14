@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, Header
 from pydantic import BaseModel
 from firebase.utils1 import deleteMessages, insertTask, retriveAllTask, updateTask, deleteTask,insertMessage,retriveMessages
-from GeminiAPI.utils import generalDialog, conflictChecker,messageGenerator,conversaction
+from GeminiAPI.utils import generalDialog, conflictChecker,messageGenerator,conversaction,check_task_conflict
 from CalendarAPI.utils import create_google_calendar_event, update_google_calendar_event, delete_google_calendar_event
 from fastapi.middleware.cors import CORSMiddleware
 import re
@@ -47,7 +47,7 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
         history += f'\nDATARESULT:{tasks}'
 
         response = generalDialog(user_input, history)
-        response["nInfo"] = response.get("nInfo", {})  # Ensure nInfo exists in response
+        response["nInfo"] = response.get("nInfo", {}) 
         logger.info(f"Generated Response: {response}")
 
         if not response.get('isInfoIncomplete'):
@@ -56,7 +56,8 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
             if db_action == 'add':
                 payload = response.get('payload', {})
                 if all(k in payload for k in ['startdate', 'starttime', 'enddate', 'endtime']):
-                    conflict_check = conflictChecker(payload, tasks, 'add')
+                    inter_conflict = check_task_conflict(payload,tasks)
+                    conflict_check = conflictChecker(inter_conflict, tasks, 'add')
                     if not conflict_check.get('isConflict'):
                         event_info = create_google_calendar_event(
                             access_token,
@@ -97,7 +98,8 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
 
                 if updated_payload.get('addedToCalendar') and task_id:
                     tasks = [t for t in tasks if t.get('task_id') != task_id]
-                    conflict_check = conflictChecker(updated_payload, tasks, 'update')
+                    inter_conflict = check_task_conflict(updated_payload,tasks)
+                    conflict_check = conflictChecker(inter_conflict, tasks, 'update')
                     
                     if not conflict_check.get('isConflict'):
                         if response.get('calendarAction') == 'add':
@@ -156,6 +158,7 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
         print(response)
         return response
     except Exception as e:
+        
         logger.error(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 

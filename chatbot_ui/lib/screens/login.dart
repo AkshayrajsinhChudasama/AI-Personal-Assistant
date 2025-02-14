@@ -32,23 +32,19 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Trigger Google Sign-In
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         throw Exception('Sign-in aborted by user.');
       }
 
-      // Obtain authentication details
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // Sign in to Firebase
       final UserCredential userCredential = await _auth.signInWithCredential(credential);
 
-      // Store the access token and expiry time
       String? accessToken = googleAuth.accessToken;
       String expiryTime = DateTime.now().add(const Duration(seconds: 3600)).toIso8601String();
 
@@ -62,7 +58,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      // Handle errors
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -83,10 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Login"),
-        centerTitle: true,
-      ),
+      backgroundColor: const Color(0xFF6A5AE0),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 30.0),
@@ -94,25 +86,27 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                'Welcome to ChatBot-V1.0',
+                'Welcome to AI Assistant',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),
               _isLoading
-                  ? const CircularProgressIndicator()
+                  ? const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              )
                   : ElevatedButton(
                 onPressed: signInWithGoogle,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 12, horizontal: 16),
+                  backgroundColor: const Color(0xFF836FFF),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
-                    side: const BorderSide(color: Colors.grey),
+                    side: const BorderSide(color: Colors.white),
                   ),
                   elevation: 2,
                 ),
@@ -130,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black,
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -141,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 'By continuing, you agree to our Terms of Service and Privacy Policy.',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey,
+                  color: Colors.white,
                 ),
                 textAlign: TextAlign.center,
               ),

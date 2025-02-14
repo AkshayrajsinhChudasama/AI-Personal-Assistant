@@ -159,6 +159,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: _clearHistory,
+              color: Colors.white,
               tooltip: 'Clear History',
             ),
           ],
@@ -208,15 +209,18 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ListTile(
-                          leading: const Icon(Icons.logout),
-                          title: const Text('Log Out'),
-                          onTap: () async {
-                            _closeMenu();
-                            await Future.delayed(const Duration(milliseconds: 200));
-                            await _signOut();
-                          },
-                        ),
+                        Container(
+                          color: Colors.white, // White background
+                          child: ListTile(
+                            leading: const Icon(Icons.logout, color: Colors.black),
+                            title: const Text('Log Out',style: TextStyle(color: Colors.black),),
+                            onTap: () async {
+                              _closeMenu();
+                              await Future.delayed(const Duration(milliseconds: 200));
+                              await _signOut();
+                            },
+                          ),
+                        )
                       ],
                     ),
                   ),
