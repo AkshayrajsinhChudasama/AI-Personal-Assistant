@@ -12,40 +12,51 @@ class ChatInputField extends StatefulWidget {
   _ChatInputFieldState createState() => _ChatInputFieldState();
 }
 
-class _ChatInputFieldState extends State<ChatInputField> {
+class _ChatInputFieldState extends State<ChatInputField> with SingleTickerProviderStateMixin {
   stt.SpeechToText _speechToText = stt.SpeechToText();
   bool _isListening = false;
+  double _rotation = 0.0;  // For rotating the mic icon
 
-  // Request microphone permission and start listening if granted
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   Future<void> _startListening() async {
-    // Request microphone permission
     PermissionStatus status = await Permission.microphone.request();
 
-    // If permission granted, start listening
     if (status.isGranted) {
       bool available = await _speechToText.initialize();
       if (available) {
         setState(() {
           _isListening = true;
+          _rotation += 6.2832;  // Full 360-degree rotation (2 * pi radians)
         });
-        _speechToText.listen(onResult: (result) {
-          widget.controller.text = result.recognizedWords;
-        });
+
+        _speechToText.listen(
+          onResult: (result) {
+            widget.controller.text = result.recognizedWords;
+          },
+        );
       } else {
         print("Speech recognition not available.");
       }
     } else {
       print("Microphone permission not granted.");
-      // Optionally show a dialog or alert for the user to grant permission
     }
   }
 
-  // Stop listening
   void _stopListening() async {
     await _speechToText.stop();
     setState(() {
       _isListening = false;
+      _rotation += 6.2832;  // Complete another full rotation (reset the rotation)
     });
+  }
+
+  void _handleSubmit() {
+    widget.onSend();
+    _stopListening();  // Ensure the mic stops when submitting
   }
 
   @override
@@ -54,24 +65,46 @@ class _ChatInputFieldState extends State<ChatInputField> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: Row(
         children: [
-          // Microphone Button (on the extreme left)
           GestureDetector(
             onTap: _isListening ? _stopListening : _startListening,
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0xFF6A5AE0),
+                color: _isListening ? Colors.red : const Color(0xFF6A5AE0),
+                boxShadow: _isListening
+                    ? [
+                  BoxShadow(
+                    color: Colors.red.withOpacity(0.5),
+                    blurRadius: 10,
+                    spreadRadius: 3,
+                  ),
+                ]
+                    : const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 4,
+                    offset: Offset(2, 2),
+                  ),
+                ],
               ),
-              child: Icon(
-                _isListening ? Icons.mic_off : Icons.mic,
-                color: Colors.white,
-                size: 24,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: AnimatedRotation(
+                  turns: _rotation / 6.2832,  // Convert radians to full turns (1 turn = 2*pi radians)
+                  duration: const Duration(milliseconds: 300),
+                  child: Icon(
+                    _isListening ? Icons.mic_off : Icons.mic,
+                    color: Colors.white,
+                    size: 24,
+                    key: ValueKey<bool>(_isListening),
+                  ),
+                ),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          // Input Field
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -96,15 +129,15 @@ class _ChatInputFieldState extends State<ChatInputField> {
                   hintText: "How can I help you?",
                   hintStyle: TextStyle(color: Colors.grey.shade600),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  contentPadding:
+                  const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                 ),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          // Send Button
           GestureDetector(
-            onTap: widget.onSend,
+            onTap: _handleSubmit,  // Call the new handleSubmit method
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: const BoxDecoration(

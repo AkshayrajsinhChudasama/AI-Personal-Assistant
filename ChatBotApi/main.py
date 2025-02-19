@@ -57,7 +57,7 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
                 payload = response.get('payload', {})
                 if all(k in payload for k in ['startdate', 'starttime', 'enddate', 'endtime']):
                     inter_conflict = check_task_conflict(payload,tasks)
-                    conflict_check = conflictChecker(inter_conflict, tasks, 'add')
+                    conflict_check = conflictChecker(inter_conflict, tasks, 'add')[0]
                     if not conflict_check.get('isConflict'):
                         event_info = create_google_calendar_event(
                             access_token,
@@ -99,7 +99,7 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
                 if updated_payload.get('addedToCalendar') and task_id:
                     tasks = [t for t in tasks if t.get('task_id') != task_id]
                     inter_conflict = check_task_conflict(updated_payload,tasks)
-                    conflict_check = conflictChecker(inter_conflict, tasks, 'update')
+                    conflict_check = conflictChecker(inter_conflict, tasks, 'update')[0]
                     
                     if not conflict_check.get('isConflict'):
                         if response.get('calendarAction') == 'add':

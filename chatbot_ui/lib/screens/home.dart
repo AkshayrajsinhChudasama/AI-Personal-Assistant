@@ -1,14 +1,15 @@
+import 'package:flutter/material.dart';
 import 'package:chatbot_ui/services/notificationController.dart';
 import 'package:chatbot_ui/widgets/Input.dart';
-import 'package:flutter/material.dart';
-import 'package:chatbot_ui/utils/colors.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/api.dart';
 import '../services/notification.dart';
+import '../utils/colors.dart';
 import '../widgets/utils.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,10 +25,13 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   String chatHistory = '';
   String stage = 'new';
-  List<Map<String, dynamic>> messages = []; // Store datetime along with the message
+  List<Map<String, dynamic>> messages = [];
   late AnimationController _menuController;
   late Animation<double> _menuAnimation;
   bool isMenuOpen = false;
+  FlutterTts flutterTts = FlutterTts();
+
+  bool isSpeechEnabled = false; // Track speech button state
 
   @override
   void initState() {
@@ -48,9 +52,11 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     _messageController.dispose();
     _scrollController.dispose();
     _menuController.dispose();
+    flutterTts.stop();
     super.dispose();
   }
 
+  // Method to load messages
   void loadMessages() async {
     String? email = FirebaseAuth.instance.currentUser?.email;
     if (email != null) {
@@ -134,16 +140,25 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     return messageWidgets;
   }
 
+  // Method to handle text-to-speech
+  Future<void> _speak(String text) async {
+    if (isSpeechEnabled && text.isNotEmpty) {
+      await flutterTts.setLanguage("en-US");
+      await flutterTts.setPitch(1);
+      await flutterTts.speak(text);  // Speak the text
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: _closeMenu,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("Chat Application"
-          ,style: TextStyle(
+          title: const Text("Chat Application",
+            style: TextStyle(
               fontSize: 16,
-              color:  Colors.white ,
+              color: Colors.white,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -161,6 +176,22 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
               onPressed: _clearHistory,
               color: Colors.white,
               tooltip: 'Clear History',
+            ),
+            IconButton(
+              icon: isSpeechEnabled
+                  ? const Icon(Icons.volume_up, color: Colors.green)
+                  : const Icon(Icons.volume_up, color: Colors.white), // Change color for ON/OFF state
+              onPressed: () {
+                setState(() {
+                  isSpeechEnabled = !isSpeechEnabled; // Toggle speech state
+                });
+
+                if (messages.isNotEmpty) {
+                  _speak(messages.last['message']); // Speak last message if button is ON
+                }
+              },
+              color: Colors.white,
+              tooltip: isSpeechEnabled ? 'Speech Enabled' : 'Speech Disabled', // Update tooltip text
             ),
           ],
         ),
@@ -180,7 +211,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                   Expanded(
                     child: ListView(
                       controller: _scrollController,
-                      children: buildMessageList(),  // Use the new message list builder
+                      children: buildMessageList(),
                     ),
                   ),
                   Padding(
@@ -210,10 +241,10 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          color: Colors.white, // White background
+                          color: Colors.white,
                           child: ListTile(
                             leading: const Icon(Icons.logout, color: Colors.black),
-                            title: const Text('Log Out',style: TextStyle(color: Colors.black),),
+                            title: const Text('Log Out', style: TextStyle(color: Colors.black)),
                             onTap: () async {
                               _closeMenu();
                               await Future.delayed(const Duration(milliseconds: 200));
@@ -250,6 +281,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
       });
       var data = await ChatAPI().sendMessageToApi(message, chatHistory, stage, email!);
       var apiResponse = data['text'];
+
       setState(() {
         chatHistory += '\nBot: $apiResponse';
         if (data['text'] != null) {
@@ -263,34 +295,14 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
           'dateTime': DateTime.now(),
         });
       });
+
+      // Speak the bot's response if speech is enabled
+      if (isSpeechEnabled && apiResponse.isNotEmpty) {
+        _speak(apiResponse);  // Speak the response
+      }
+
       _scrollToBottom();
     }
-  }
-
-  Future<bool?> _showConfirmationDialog() {
-    return showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Are you sure?'),
-          content: const Text('This action will delete all your messages permanently.'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false); // User pressed No
-              },
-              child: const Text('No'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true); // User pressed Yes
-              },
-              child: const Text('Yes'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   void _scrollToBottom() {
@@ -369,5 +381,31 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
         }
       }
     }
+  }
+
+  Future<bool?> _showConfirmationDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Are you sure?'),
+          content: const Text('This action will delete all your messages permanently.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // User pressed No
+              },
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // User pressed Yes
+              },
+              child: const Text('Yes'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
