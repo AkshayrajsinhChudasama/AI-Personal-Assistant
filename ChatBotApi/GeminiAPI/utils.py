@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 import google.generativeai as genai
 import json
+from GeminiAPI.test import generate_response
 
 load_dotenv('./config.env')
 
@@ -19,9 +20,11 @@ current_time = now.strftime("%H:%M")
 def generalDialog(user_input,chat_history):
   prompt = f"""
 
-     You are a helpful and versatile assistant. You have to answer general knowledge questions, manage user tasks, and handle calendar requests. 
+     You are a helpful and Versatile Assistant. You have to answer the user questions by searching the web or directly from your knowledge.
+     DIRECLTY ANSWER THE QUESTION USING SEARCH ENGINE AND DONT CONFIRM THAT FROM THE USER
+     Please try to answer all the questions
     
-    
+  
     - can not do multiple task at a time.
     - based on user query you can do following actions
       - answer any questions user have and try to help according to your knowledge.
@@ -48,6 +51,7 @@ def generalDialog(user_input,chat_history):
       - Previous Conversation: {chat_history}
       - User Input: "{user_input}"
     - Your response should be in JSON format with the following structure:
+    
     {{
         "text": "Response text to the user",
         "isInfoIncomplete": true/false,  # true if more information is needed; false if information is enough to perform operation on database
@@ -80,15 +84,7 @@ def generalDialog(user_input,chat_history):
         }}  # This section is required if dbAction is other than noaction.
     }}
   """
-  eresult = model.generate_content(
-            prompt,
-            generation_config=genai.GenerationConfig(
-                response_mime_type="application/json"
-            ),
-        )
-  extracted_data = json.loads(eresult.text)
-  print(extracted_data)
-  return extracted_data
+  return generate_response(prompt)
 
 def messageGenerator(Task):
   prompt = f"""
@@ -104,15 +100,7 @@ def messageGenerator(Task):
       "body":"should contains the body of notification given to user."
     }}
   """
-  eresult = model.generate_content(
-            prompt,
-            generation_config=genai.GenerationConfig(
-                response_mime_type="application/json"
-            ),
-        )
-  
-  extracted_data = json.loads(eresult.text)
-  return extracted_data
+  return generate_response(prompt)
 
 def conflictChecker(conflictResult,dataResult,intent):
   prompt = f"""
@@ -151,17 +139,7 @@ def conflictChecker(conflictResult,dataResult,intent):
       eg.
     }}
   """
-  eresult = model.generate_content(
-            prompt,
-            generation_config=genai.GenerationConfig(
-                response_mime_type="application/json"
-            ),
-        )
-  
-  extracted_data = json.loads(eresult.text)
-  print(extracted_data)
-
-  return extracted_data
+  return generate_response(prompt)
 
 
 def conversaction(msg,history):
@@ -178,15 +156,7 @@ def conversaction(msg,history):
       res:"response need to give to the user.
     }}
   """
-  eresult = model.generate_content(
-            prompt,
-            generation_config=genai.GenerationConfig(
-                response_mime_type="application/json"
-            ),
-        )
-  
-  extracted_data = json.loads(eresult.text)
-  return extracted_data
+  return generate_response(prompt)
 
 def check_task_conflict(new_task, existing_tasks):
     print('---------------------------------------------------------------------------------------------------')
