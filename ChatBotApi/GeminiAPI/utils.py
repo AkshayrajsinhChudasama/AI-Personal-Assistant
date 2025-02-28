@@ -1,30 +1,60 @@
 from datetime import datetime
 from dotenv import load_dotenv
 import os
-import google.generativeai as genai
+import google.generativeai as genai2
 import json
-from GeminiAPI.test import generate_response
+from google import genai
+from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
+
 
 load_dotenv('./config.env')
 
 GEMINI_KEY = os.getenv("GEMINI_KEY")
 
-genai.configure(api_key=GEMINI_KEY)
-model = genai.GenerativeModel("gemini-2.0-flash")
+genai2.configure(api_key=GEMINI_KEY)
+model = genai2.GenerativeModel("gemini-2.0-flash")
 
 now = datetime.now()
 current_date = now.strftime("%Y-%m-%d")  
 current_day = now.strftime("%A")  
 current_time = now.strftime("%H:%M")
 
+def generate_response(prompt):
+    eresult = model.generate_content(
+        prompt,
+        generation_config=genai2.GenerationConfig(
+            response_mime_type="application/json"
+        ),
+    )
+    return json.loads(eresult.text)
+  
+def generate_search_response(prompt):
+  client = genai.Client(api_key="AIzaSyCsVRWHGdVoWUJ4IPsEmYXuZ0Fnhyk4rdc")
+  model_id = "gemini-2.0-flash"
+
+  google_search_tool = Tool(
+      google_search = GoogleSearch()
+  )
+
+  response = client.models.generate_content(
+      model=model_id,
+      contents=prompt,
+      config=GenerateContentConfig(
+          tools=[google_search_tool],
+          response_modalities=["TEXT"],
+      )
+  )
+
+  response_text = response.candidates[0].content.parts[0].text.strip()
+  print(response_text)
+  return response_text
+
 def generalDialog(user_input,chat_history):
   prompt = f"""
 
-     You are a helpful and Versatile Assistant. You have to answer the user questions by searching the web or directly from your knowledge.
-     DIRECLTY ANSWER THE QUESTION USING SEARCH ENGINE AND DONT CONFIRM THAT FROM THE USER
-     Please try to answer all the questions
+     You are a helpful and versatile assistant. You have to answer general knowledge questions, manage user tasks, and handle calendar requests. 
     
-  
+    
     - can not do multiple task at a time.
     - based on user query you can do following actions
       - answer any questions user have and try to help according to your knowledge.
@@ -51,7 +81,6 @@ def generalDialog(user_input,chat_history):
       - Previous Conversation: {chat_history}
       - User Input: "{user_input}"
     - Your response should be in JSON format with the following structure:
-    
     {{
         "text": "Response text to the user",
         "isInfoIncomplete": true/false,  # true if more information is needed; false if information is enough to perform operation on database
@@ -84,7 +113,7 @@ def generalDialog(user_input,chat_history):
         }}  # This section is required if dbAction is other than noaction.
     }}
   """
-  return generate_response(prompt)
+  return generate_response(prompt=prompt)
 
 def messageGenerator(Task):
   prompt = f"""
@@ -100,7 +129,7 @@ def messageGenerator(Task):
       "body":"should contains the body of notification given to user."
     }}
   """
-  return generate_response(prompt)
+  return generate_response(prompt=prompt)
 
 def conflictChecker(conflictResult,dataResult,intent):
   prompt = f"""
@@ -139,8 +168,38 @@ def conflictChecker(conflictResult,dataResult,intent):
       eg.
     }}
   """
-  return generate_response(prompt)
+  return generate_response(prompt=prompt)
 
+def searchToGoogle(user_input,chat_history):
+  prompt = f"""
+    user has following query and chat history please give answer of user.
+    Context:
+      - User input : {user_input}
+      - Chat history : {chat_history}
+      - Today date and day : {current_date} {current_day}
+      - Current Time : {current_time}
+    just output the answer only.
+  """
+  return generate_search_response(prompt=prompt)
+
+def classify(user_input,chat_history):
+  prompt = f"""
+    - you are given with user sentence and history.
+    - based on that please classify it to one of the following
+        1.first : if related to task management like retrive,delete tasks information on task available etc.
+        2.second : if real time and general information required which is seprate from task management application.
+        
+    - Context:
+      user input : {user_input}
+      chat history : {chat_history}
+      
+    output in following format
+    {{
+      res:"first/second"
+      history : if res is second then from chat history put some part which is required to solve the user input.
+    }}
+  """
+  return generate_response(prompt=prompt)
 
 def conversaction(msg,history):
   prompt = f"""
@@ -156,7 +215,7 @@ def conversaction(msg,history):
       res:"response need to give to the user.
     }}
   """
-  return generate_response(prompt)
+  return generate_response(prompt=prompt)
 
 def check_task_conflict(new_task, existing_tasks):
     print('---------------------------------------------------------------------------------------------------')

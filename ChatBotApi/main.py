@@ -1,13 +1,12 @@
 from fastapi import FastAPI, HTTPException, Depends, Header
 from pydantic import BaseModel
-from firebase.utils1 import deleteMessages, insertTask, retriveAllTask, updateTask, deleteTask,insertMessage,retriveMessages
-from GeminiAPI.utils import generalDialog, conflictChecker,messageGenerator,conversaction,check_task_conflict
+from database.utils1 import deleteMessages, insertTask, retriveAllTask, updateTask, deleteTask,insertMessage,retriveMessages
+from GeminiAPI.utils import generalDialog, conflictChecker,messageGenerator,conversaction,check_task_conflict,searchToGoogle,classify
 from CalendarAPI.utils import create_google_calendar_event, update_google_calendar_event, delete_google_calendar_event
 from fastapi.middleware.cors import CORSMiddleware
 import re
 import logging
 
-# Initialize logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -45,117 +44,123 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
         info = await retriveAllTask(email)
         tasks = info.get('data', []) if isinstance(info, dict) else []
         history += f'\nDATARESULT:{tasks}'
+        classification_res = classify(user_input,history)
+        print(classification_res)
+        response = {'text': 'If this message appears then ', 'isInfoIncomplete': False, 'dbAction': 'noaction', 'calendarAction': 'noaction'}
+        if(classification_res['res']=='first'):
+            response = generalDialog(user_input, history)
+            response["nInfo"] = response.get("nInfo", {}) 
+            logger.info(f"Generated Response: {response}")
 
-        response = generalDialog(user_input, history)
-        response["nInfo"] = response.get("nInfo", {}) 
-        logger.info(f"Generated Response: {response}")
+            if not response.get('isInfoIncomplete'):
+                db_action = response.get('dbAction')
 
-        if not response.get('isInfoIncomplete'):
-            db_action = response.get('dbAction')
-
-            if db_action == 'add':
-                payload = response.get('payload', {})
-                if all(k in payload for k in ['startdate', 'starttime', 'enddate', 'endtime']):
-                    inter_conflict = check_task_conflict(payload,tasks)
-                    conflict_check = conflictChecker(inter_conflict, tasks, 'add')[0]
-                    if not conflict_check.get('isConflict'):
-                        event_info = create_google_calendar_event(
-                            access_token,
-                            payload.get('summary', ''),
-                            payload.get('desc', ''),
-                            payload['startdate'],
-                            payload['starttime'],
-                            payload['enddate'],
-                            payload['endtime'],
-                            payload.get('daily', False)
-                        )
-                        payload['addedToCalendar'] = True
-                        temp = await insertTask(email, payload, event_info.get('id'))
-                    else:
-                        await insertMessage(email,conflict_check['text'],'bot')
-                        return conflict_check
-                else:
-                    payload['addedToCalendar'] = False
-                    temp = await insertTask(email, payload)
-
-                response['nInfo'].update({
-                    'task_id': temp['task_id'],
-                    'startdate': payload.get('startdate'),
-                    'starttime': payload.get('starttime'),
-                    'enddate': payload.get('enddate'),
-                    'endtime': payload.get('endtime'),
-                    'title':conflict_check.get('title'),
-                    'body':conflict_check.get('body'),
-                    'title1':conflict_check.get('title1'),
-                    'body1':conflict_check.get('body1')
-                })
-
-                response['intent'] = 'new'
-
-            elif db_action == 'update':
-                updated_payload = response.get('payload', {}).get('updatedPayload', {}).get('task', {})
-                task_id = response.get('payload', {}).get('updatedPayload', {}).get('task_id')
-
-                if updated_payload.get('addedToCalendar') and task_id:
-                    tasks = [t for t in tasks if t.get('task_id') != task_id]
-                    inter_conflict = check_task_conflict(updated_payload,tasks)
-                    conflict_check = conflictChecker(inter_conflict, tasks, 'update')[0]
-                    
-                    if not conflict_check.get('isConflict'):
-                        if response.get('calendarAction') == 'add':
+                if db_action == 'add':
+                    payload = response.get('payload', {})
+                    if all(k in payload for k in ['startdate', 'starttime', 'enddate', 'endtime']):
+                        inter_conflict = check_task_conflict(payload,tasks)
+                        conflict_check = conflictChecker(inter_conflict, tasks, 'add')[0]
+                        if not conflict_check.get('isConflict'):
                             event_info = create_google_calendar_event(
                                 access_token,
-                                updated_payload.get('summary', ''),
-                                updated_payload.get('desc', ''),
-                                updated_payload['startdate'],
-                                updated_payload['starttime'],
-                                updated_payload['enddate'],
-                                updated_payload['endtime'],
-                                updated_payload.get('daily', False)
+                                payload.get('summary', ''),
+                                payload.get('desc', ''),
+                                payload['startdate'],
+                                payload['starttime'],
+                                payload['enddate'],
+                                payload['endtime'],
+                                payload.get('daily', False)
                             )
-                            response['payload']['updatedPayload']['task_id'] = event_info.get('id')
-                        elif response.get('calendarAction') == 'update':
-                            update_google_calendar_event(
-                                access_token,
-                                task_id,
-                                updated_payload.get('summary', ''),
-                                updated_payload.get('desc', ''),
-                                updated_payload['startdate'],
-                                updated_payload['starttime'],
-                                updated_payload['enddate'],
-                                updated_payload['endtime'],
-                                updated_payload.get('daily', False)
-                            )
+                            payload['addedToCalendar'] = True
+                            temp = await insertTask(email, payload, event_info.get('id'))
+                        else:
+                            await insertMessage(email,conflict_check['text'],'bot')
+                            return conflict_check
                     else:
-                        await insertMessage(email,conflict_check['text'],'bot')
-                        return conflict_check
+                        payload['addedToCalendar'] = False
+                        temp = await insertTask(email, payload)
+
                     response['nInfo'].update({
+                        'task_id': temp['task_id'],
+                        'startdate': payload.get('startdate'),
+                        'starttime': payload.get('starttime'),
+                        'enddate': payload.get('enddate'),
+                        'endtime': payload.get('endtime'),
                         'title':conflict_check.get('title'),
                         'body':conflict_check.get('body'),
                         'title1':conflict_check.get('title1'),
                         'body1':conflict_check.get('body1')
                     })
-                await updateTask(task_id, updated_payload, task_id)
-                response['nInfo'].update({
-                    'task_id': task_id,
-                    'startdate': updated_payload.get('startdate'),
-                    'starttime': updated_payload.get('starttime'),
-                    'enddate': updated_payload.get('enddate'),
-                    'endtime': updated_payload.get('endtime'),
-                })
-                response['intent'] = 'new'
 
-            elif db_action == 'delete':
-                delete_payload = response.get('payload', {}).get('deletePayload', [])
-                response['nInfo']['delete'] = []
-                for obj in delete_payload:
-                    if obj.get('addedToCalendar'):
-                        delete_google_calendar_event(access_token, obj.get('_id'))
-                    await deleteTask(obj.get('_id'))
-                    response['nInfo']['delete'].append(obj.get('_id'))
-                response['intent'] = 'new'
+                    response['intent'] = 'new'
+
+                elif db_action == 'update':
+                    updated_payload = response.get('payload', {}).get('updatedPayload', {}).get('task', {})
+                    task_id = response.get('payload', {}).get('updatedPayload', {}).get('task_id')
+
+                    if updated_payload.get('addedToCalendar') and task_id:
+                        tasks = [t for t in tasks if t.get('task_id') != task_id]
+                        inter_conflict = check_task_conflict(updated_payload,tasks)
+                        conflict_check = conflictChecker(inter_conflict, tasks, 'update')[0]
+                        
+                        if not conflict_check.get('isConflict'):
+                            if response.get('calendarAction') == 'add':
+                                event_info = create_google_calendar_event(
+                                    access_token,
+                                    updated_payload.get('summary', ''),
+                                    updated_payload.get('desc', ''),
+                                    updated_payload['startdate'],
+                                    updated_payload['starttime'],
+                                    updated_payload['enddate'],
+                                    updated_payload['endtime'],
+                                    updated_payload.get('daily', False)
+                                )
+                                response['payload']['updatedPayload']['task_id'] = event_info.get('id')
+                            elif response.get('calendarAction') == 'update':
+                                update_google_calendar_event(
+                                    access_token,
+                                    task_id,
+                                    updated_payload.get('summary', ''),
+                                    updated_payload.get('desc', ''),
+                                    updated_payload['startdate'],
+                                    updated_payload['starttime'],
+                                    updated_payload['enddate'],
+                                    updated_payload['endtime'],
+                                    updated_payload.get('daily', False)
+                                )
+                        else:
+                            await insertMessage(email,conflict_check['text'],'bot')
+                            return conflict_check
+                        response['nInfo'].update({
+                            'title':conflict_check.get('title'),
+                            'body':conflict_check.get('body'),
+                            'title1':conflict_check.get('title1'),
+                            'body1':conflict_check.get('body1')
+                        })
+                    await updateTask(task_id, updated_payload, task_id)
+                    response['nInfo'].update({
+                        'task_id': task_id,
+                        'startdate': updated_payload.get('startdate'),
+                        'starttime': updated_payload.get('starttime'),
+                        'enddate': updated_payload.get('enddate'),
+                        'endtime': updated_payload.get('endtime'),
+                    })
+                    response['intent'] = 'new'
+
+                elif db_action == 'delete':
+                    delete_payload = response.get('payload', {}).get('deletePayload', [])
+                    response['nInfo']['delete'] = []
+                    for obj in delete_payload:
+                        if obj.get('addedToCalendar'):
+                            delete_google_calendar_event(access_token, obj.get('_id'))
+                        await deleteTask(obj.get('_id'))
+                        response['nInfo']['delete'].append(obj.get('_id'))
+                    response['intent'] = 'new'
+            print(response)
+        else:
+            response['text']=searchToGoogle(user_input,classification_res['history'])
+            print(response)
         await insertMessage(email,response['text'],'bot')
-        print(response)
         return response
     except Exception as e:
         
