@@ -1,6 +1,6 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:chatbot_ui/services/notification.dart';
-
+@pragma("vm:entry-point")
 class NotificationController {
 
   /// Detect when a new notification or schedule is created
