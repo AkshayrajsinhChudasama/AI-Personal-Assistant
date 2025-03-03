@@ -173,9 +173,9 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
 
   Future<void> _toggleSpeech() async {
     if (isSpeechEnabled) {
-      await flutterTts.stop(); // Stop speaking immediately
+      await flutterTts.stop();
     } else if (messages.isNotEmpty) {
-      await _speak(messages.last['message']); // Speak last message
+      await _speak(messages.last['message']);
     }
 
     setState(() {
@@ -210,6 +210,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
               icon: const Icon(Icons.delete),
               onPressed: _clearHistory,
               tooltip: 'Clear History',
+              color: Colors.white,
             ),
             IconButton(
               icon: Icon(Icons.volume_up, color: isSpeechEnabled ? Colors.green : Colors.white),
@@ -240,6 +241,36 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                 ],
               ),
             ),
+            if (isMenuOpen)
+              Positioned(
+                top: 0,
+                left: 0,
+                child: SizeTransition(
+                  sizeFactor: _menuAnimation,
+                  axisAlignment: -1.0,
+                  child: Container(
+                    color: AppColors.cardBackgroundColor,
+                    width: 200,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          color: Colors.white,
+                          child: ListTile(
+                            leading: const Icon(Icons.logout, color: Colors.black),
+                            title: const Text('Log Out', style: TextStyle(color: Colors.black)),
+                            onTap: () async {
+                              _closeMenu();
+                              await Future.delayed(const Duration(milliseconds: 200));
+                              await _signOut();
+                            },
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

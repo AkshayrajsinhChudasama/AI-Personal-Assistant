@@ -1,2 +1,0 @@
-D:/Project2/AI-Personal-Assistant/chatbot_ui/android/app/.cxx/Debug/2p6i2z6g/armeabi-v7a/CMakeFiles/edit_cache.dir
-D:/Project2/AI-Personal-Assistant/chatbot_ui/android/app/.cxx/Debug/2p6i2z6g/armeabi-v7a/CMakeFiles/rebuild_cache.dir
