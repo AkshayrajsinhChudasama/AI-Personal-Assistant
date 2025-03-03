@@ -23,15 +23,18 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   final ScrollController _scrollController = ScrollController();
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
   String chatHistory = '';
   String stage = 'new';
   List<Map<String, dynamic>> messages = [];
+
   late AnimationController _menuController;
   late Animation<double> _menuAnimation;
   bool isMenuOpen = false;
-  FlutterTts flutterTts = FlutterTts();
 
+  FlutterTts flutterTts = FlutterTts();
   bool isSpeechEnabled = false; // Track speech button state
+  bool isSpeaking = false; // Track if speech is currently in progress
 
   @override
   void initState() {
@@ -44,7 +47,8 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
       parent: _menuController,
       curve: Curves.easeInOut,
     );
-    loadMessages(); // Load messages when the screen is opened
+    _initializeTTS();
+    loadMessages();
   }
 
   @override
@@ -56,11 +60,31 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     super.dispose();
   }
 
-  // Method to load messages
+  void _initializeTTS() {
+    flutterTts.setStartHandler(() {
+      setState(() {
+        isSpeaking = true;
+      });
+    });
+
+    flutterTts.setCompletionHandler(() {
+      setState(() {
+        isSpeaking = false;
+      });
+    });
+
+    flutterTts.setErrorHandler((message) {
+      setState(() {
+        isSpeaking = false;
+      });
+    });
+  }
+
+  // Load messages from API
   void loadMessages() async {
     String? email = FirebaseAuth.instance.currentUser?.email;
     if (email != null) {
-      var response = await ChatAPI().retriveMessages(email); // Call your API
+      var response = await ChatAPI().retriveMessages(email);
       if (response['code'] == 200) {
         List<dynamic> data = response['data'] as List<dynamic>;
         List<Map<String, dynamic>> mappedMessages = data.map<Map<String, dynamic>>((msg) {
@@ -93,7 +117,6 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   List<Widget> buildMessageList() {
     Map<String, List<Map<String, dynamic>>> groupedMessages = {};
 
-    // Group messages by day
     for (var message in messages) {
       String formattedDate = formatDate(message['dateTime']);
       if (groupedMessages[formattedDate] == null) {
@@ -104,7 +127,6 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
 
     List<Widget> messageWidgets = [];
 
-    // Build the UI for each day and its messages
     groupedMessages.forEach((date, messageList) {
       messageWidgets.add(
         Padding(
@@ -142,12 +164,25 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
 
   // Method to handle text-to-speech
   Future<void> _speak(String text) async {
-    if (isSpeechEnabled && text.isNotEmpty) {
+    if (text.isNotEmpty) {
       await flutterTts.setLanguage("en-US");
       await flutterTts.setPitch(1);
-      await flutterTts.speak(text);  // Speak the text
+      await flutterTts.speak(text);
     }
   }
+
+  Future<void> _toggleSpeech() async {
+    if (isSpeechEnabled) {
+      await flutterTts.stop(); // Stop speaking immediately
+    } else if (messages.isNotEmpty) {
+      await _speak(messages.last['message']); // Speak last message
+    }
+
+    setState(() {
+      isSpeechEnabled = !isSpeechEnabled;
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -174,28 +209,15 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: _clearHistory,
-              color: Colors.white,
               tooltip: 'Clear History',
             ),
             IconButton(
-              icon: isSpeechEnabled
-                  ? const Icon(Icons.volume_up, color: Colors.green)
-                  : const Icon(Icons.volume_up, color: Colors.white), // Change color for ON/OFF state
-              onPressed: () {
-                setState(() {
-                  isSpeechEnabled = !isSpeechEnabled; // Toggle speech state
-                });
-
-                if (messages.isNotEmpty) {
-                  _speak(messages.last['message']); // Speak last message if button is ON
-                }
-              },
-              color: Colors.white,
-              tooltip: isSpeechEnabled ? 'Speech Enabled' : 'Speech Disabled', // Update tooltip text
+              icon: Icon(Icons.volume_up, color: isSpeechEnabled ? Colors.green : Colors.white),
+              onPressed: _toggleSpeech,
+              tooltip: isSpeechEnabled ? 'Speech Enabled' : 'Speech Disabled',
             ),
           ],
         ),
-        backgroundColor: AppColors.scaffoldBackgroundColor,
         body: Stack(
           children: [
             Positioned.fill(
@@ -214,56 +236,18 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                       children: buildMessageList(),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: ChatInputField(controller: _messageController, onSend: _sendMessage),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ChatInputField(controller: _messageController, onSend: _sendMessage),
                 ],
               ),
             ),
-            if (isMenuOpen)
-              Positioned(
-                top: 0,
-                left: 0,
-                child: SizeTransition(
-                  sizeFactor: _menuAnimation,
-                  axisAlignment: -1.0,
-                  child: Container(
-                    color: AppColors.cardBackgroundColor,
-                    width: 200,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          color: Colors.white,
-                          child: ListTile(
-                            leading: const Icon(Icons.logout, color: Colors.black),
-                            title: const Text('Log Out', style: TextStyle(color: Colors.black)),
-                            onTap: () async {
-                              _closeMenu();
-                              await Future.delayed(const Duration(milliseconds: 200));
-                              await _signOut();
-                            },
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
     );
   }
 
-  Future<void> _sendMessage() async {
+
+Future<void> _sendMessage() async {
     String message = _messageController.text.trim();
     String? email = FirebaseAuth.instance.currentUser?.email;
 
