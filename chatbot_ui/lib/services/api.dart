@@ -69,8 +69,9 @@ class ChatAPI {
     try {
       final response = await http.post(Uri.parse('$apiUrl/chat'), headers: headers, body: body);
       if (response.statusCode == 200) {
-
-        final data = json.decode(response.body);
+        var decodedResponse = utf8.decode(response.bodyBytes);
+        final data = jsonDecode(decodedResponse);
+        // final data = json.decode(response.body);
         print(data);
         if (data['nInfo'] != null) {
           final nInfo = data['nInfo'];

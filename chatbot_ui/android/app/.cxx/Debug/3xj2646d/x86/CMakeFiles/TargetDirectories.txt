@@ -1,0 +1,2 @@
+D:/AI-Personal-Assistant/chatbot_ui/android/app/.cxx/Debug/3xj2646d/x86/CMakeFiles/edit_cache.dir
+D:/AI-Personal-Assistant/chatbot_ui/android/app/.cxx/Debug/3xj2646d/x86/CMakeFiles/rebuild_cache.dir
