@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:chatbot_ui/services/notificationController.dart';
 import 'package:chatbot_ui/widgets/Input.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/api.dart';
-import '../services/notification.dart';
 import '../utils/colors.dart';
 import '../widgets/utils.dart';
 import 'package:intl/intl.dart';
@@ -13,7 +11,6 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
   State<HomeScreen> createState() => HomeScreenState();
 }
@@ -23,7 +20,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   final ScrollController _scrollController = ScrollController();
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-
+  bool isLoading = false;
   String chatHistory = '';
   String stage = 'new';
   List<Map<String, dynamic>> messages = [];
@@ -114,14 +111,12 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     return DateFormat('HH:mm').format(date);
   }
 
-  List<Widget> buildMessageList() {
+  List<Widget> buildMessageList(bool isLoading) {
     Map<String, List<Map<String, dynamic>>> groupedMessages = {};
 
     for (var message in messages) {
       String formattedDate = formatDate(message['dateTime']);
-      if (groupedMessages[formattedDate] == null) {
-        groupedMessages[formattedDate] = [];
-      }
+      groupedMessages.putIfAbsent(formattedDate, () => []);
       groupedMessages[formattedDate]?.add(message);
     }
 
@@ -137,7 +132,8 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
           ),
         ),
       );
-      messageList.forEach((message) {
+
+      for (var message in messageList) {
         messageWidgets.add(
           Column(
             crossAxisAlignment: message['sender'] == 'user' ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -145,9 +141,10 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
               ChatBubble(
                 message: message['message'],
                 sender: message['sender'],
+                isLoading: message['isLoading'] ?? false, // Show loading animation if true
               ),
               Padding(
-                padding: const EdgeInsets.only(top: 0.0),
+                padding: const EdgeInsets.only(top: 4.0),
                 child: Text(
                   formatTime(message['dateTime']),
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
@@ -156,11 +153,12 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
             ],
           ),
         );
-      });
+      }
     });
 
     return messageWidgets;
   }
+
 
   // Method to handle text-to-speech
   Future<void> _speak(String text) async {
@@ -190,42 +188,79 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
       onTap: _closeMenu,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("Chat Application",
+          title: const Text(
+            "Chat Application",
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 18, // Slightly larger for prominence
               color: Colors.white,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.bold, // Bolder for emphasis
+              letterSpacing: 1, // Adds sophistication
             ),
           ),
-          backgroundColor: const Color(0xFF6A5AE0),
+          backgroundColor: const Color(0xFF082686), // Keep your primary color
+          elevation: 4, // Adds subtle shadow for depth
+          shadowColor: Colors.black.withOpacity(0.3), // Softer shadow
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(
+              bottom: Radius.circular(16), // Rounded bottom edges
+            ),
+          ),
           leading: IconButton(
             icon: AnimatedIcon(
               icon: AnimatedIcons.menu_close,
               progress: _menuAnimation,
+              color: Colors.white,
+              size: 28, // Slightly larger icon
             ),
             onPressed: _toggleMenu,
+            tooltip: isMenuOpen ? 'Close Menu' : 'Open Menu', // Accessibility
+            splashRadius: 20, // Smaller splash radius for a cleaner tap effect
           ),
           actions: [
+            // Speech Toggle Button
             IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: _clearHistory,
-              tooltip: 'Clear History',
-              color: Colors.white,
-            ),
-            IconButton(
-              icon: Icon(Icons.volume_up, color: isSpeechEnabled ? Colors.green : Colors.white),
+              icon: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: animation,
+                  child: child,
+                ),
+                child: Icon(
+                  isSpeechEnabled ? Icons.volume_up : Icons.volume_off,
+                  key: ValueKey(isSpeechEnabled), // Ensures animation triggers
+                  color: isSpeechEnabled ? Colors.greenAccent : Colors.white,
+                  size: 26,
+                ),
+              ),
               onPressed: _toggleSpeech,
-              tooltip: isSpeechEnabled ? 'Speech Enabled' : 'Speech Disabled',
+              tooltip: isSpeechEnabled ? 'Disable Speech' : 'Enable Speech',
+              splashRadius: 20,
+            ),
+            // Clear History Button
+            IconButton(
+              icon: const Icon(
+                Icons.delete_forever,
+                color: Colors.white,
+                size: 26,
+              ),
+              onPressed: _clearHistory,
+              tooltip: 'Clear Chat History',
+              splashRadius: 20,
             ),
           ],
+          centerTitle: true, // Centers the title for symmetry
         ),
         body: Stack(
           children: [
             Positioned.fill(
-              child: Image.asset(
-                'lib/assets/background.jpg',
+              child: Image.network(
+                'https://i.pinimg.com/736x/4c/13/8d/4c138d1c8db867f1244cb400dec0e18e.jpg',
                 fit: BoxFit.cover,
               ),
+              // child: Image.asset(
+              //   'lib/assets/background.jpg',
+              //   fit: BoxFit.cover,
+              // ),
             ),
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -234,10 +269,10 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                   Expanded(
                     child: ListView(
                       controller: _scrollController,
-                      children: buildMessageList(),
+                      children: buildMessageList(isLoading),
                     ),
                   ),
-                  ChatInputField(controller: _messageController, onSend: _sendMessage),
+                 ChatInputField(controller: _messageController, onSend: _sendMessage),
                 ],
               ),
             ),
@@ -278,12 +313,13 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   }
 
 
-Future<void> _sendMessage() async {
+  Future<void> _sendMessage() async {
     String message = _messageController.text.trim();
     String? email = FirebaseAuth.instance.currentUser?.email;
 
     if (message.isNotEmpty) {
       DateTime now = DateTime.now();
+
       setState(() {
         messages.add({
           'sender': 'user',
@@ -293,32 +329,44 @@ Future<void> _sendMessage() async {
         chatHistory += '\nUser: $message';
         _scrollToBottom();
         _messageController.clear();
+
+        // Add empty message placeholder for loading state
+        messages.add({
+          'sender': 'api',
+          'message': '',
+          'dateTime': now,
+          'isLoading': true, // Mark as loading
+        });
       });
+
       var data = await ChatAPI().sendMessageToApi(message, chatHistory, stage, email!);
       var apiResponse = data['text'];
 
       setState(() {
         chatHistory += '\nBot: $apiResponse';
-        if (data['text'] != null) {
-          stage = data['text'];
-        } else {
-          stage = 'new';
+        stage = data['text'] ?? 'new';
+
+        // Find and replace the loading message with the actual response
+        int loadingIndex = messages.indexWhere((msg) => msg['isLoading'] == true);
+        if (loadingIndex != -1) {
+          messages[loadingIndex] = {
+            'sender': 'api',
+            'message': apiResponse,
+            'dateTime': DateTime.now(),
+            'isLoading': false,
+          };
         }
-        messages.add({
-          'sender': 'api',
-          'message': '$apiResponse',
-          'dateTime': DateTime.now(),
-        });
       });
 
       // Speak the bot's response if speech is enabled
       if (isSpeechEnabled && apiResponse.isNotEmpty) {
-        _speak(apiResponse);  // Speak the response
+        _speak(apiResponse);
       }
 
       _scrollToBottom();
     }
   }
+
 
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {

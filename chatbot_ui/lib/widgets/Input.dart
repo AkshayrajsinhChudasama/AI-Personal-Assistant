@@ -15,7 +15,7 @@ class ChatInputField extends StatefulWidget {
 class _ChatInputFieldState extends State<ChatInputField> with SingleTickerProviderStateMixin {
   stt.SpeechToText _speechToText = stt.SpeechToText();
   bool _isListening = false;
-  double _rotation = 0.0;  // For rotating the mic icon
+  double _rotation = 0.0; // For rotating the mic icon
 
   @override
   void dispose() {
@@ -30,7 +30,7 @@ class _ChatInputFieldState extends State<ChatInputField> with SingleTickerProvid
       if (available) {
         setState(() {
           _isListening = true;
-          _rotation += 6.2832;  // Full 360-degree rotation (2 * pi radians)
+          _rotation += 6.2832; // Full 360-degree rotation (2 * pi radians)
         });
 
         _speechToText.listen(
@@ -50,55 +50,59 @@ class _ChatInputFieldState extends State<ChatInputField> with SingleTickerProvid
     await _speechToText.stop();
     setState(() {
       _isListening = false;
-      _rotation += 6.2832;  // Complete another full rotation (reset the rotation)
+      _rotation += 6.2832; // Complete another full rotation (reset the rotation)
     });
   }
 
   void _handleSubmit() {
     widget.onSend();
-    _stopListening();  // Ensure the mic stops when submitting
+    _stopListening(); // Ensure the mic stops when submitting
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Container(
+      color: Colors.transparent,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: _isListening ? _stopListening : _startListening,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _isListening ? Colors.red : const Color(0xFF6A5AE0),
-                boxShadow: _isListening
-                    ? [
-                  BoxShadow(
-                    color: Colors.red.withOpacity(0.5),
-                    blurRadius: 10,
-                    spreadRadius: 3,
-                  ),
-                ]
-                    : const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(2, 2),
-                  ),
-                ],
-              ),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: AnimatedRotation(
-                  turns: _rotation / 6.2832,  // Convert radians to full turns (1 turn = 2*pi radians)
-                  duration: const Duration(milliseconds: 300),
-                  child: Icon(
-                    _isListening ? Icons.mic_off : Icons.mic,
-                    color: Colors.white,
-                    size: 24,
-                    key: ValueKey<bool>(_isListening),
+          Tooltip(
+            message: _isListening ? "Stop Listening" : "Start Voice Input",
+            child: GestureDetector(
+              onTap: _isListening ? _stopListening : _startListening,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _isListening ? Colors.red : const Color(0xFF082686),
+                  boxShadow: _isListening
+                      ? [
+                    BoxShadow(
+                      color: Colors.red.withOpacity(0.5),
+                      blurRadius: 10,
+                      spreadRadius: 3,
+                    ),
+                  ]
+                      : const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 4,
+                      offset: Offset(2, 2),
+                    ),
+                  ],
+                ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: AnimatedRotation(
+                    turns: _rotation / 6.2832, // Convert radians to full turns (1 turn = 2*pi radians)
+                    duration: const Duration(milliseconds: 300),
+                    child: Icon(
+                      _isListening ? Icons.mic_off : Icons.mic,
+                      color: Colors.white,
+                      size: 24,
+                      key: ValueKey<bool>(_isListening),
+                    ),
                   ),
                 ),
               ),
@@ -129,33 +133,35 @@ class _ChatInputFieldState extends State<ChatInputField> with SingleTickerProvid
                   hintText: "How can I help you?",
                   hintStyle: TextStyle(color: Colors.grey.shade600),
                   border: InputBorder.none,
-                  contentPadding:
-                  const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                 ),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _handleSubmit,  // Call the new handleSubmit method
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFF6A5AE0), Color(0xFF836FFF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(2, 2),
+          Tooltip(
+            message: "Send Message",
+            child: GestureDetector(
+              onTap: _handleSubmit,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [const Color(0xFF082686),const Color(0xFF082686)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 4,
+                      offset: Offset(2, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.send, color: Colors.white, size: 24),
               ),
-              child: const Icon(Icons.send, color: Colors.white, size: 24),
             ),
           ),
         ],

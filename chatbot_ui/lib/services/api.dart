@@ -160,7 +160,6 @@ class ChatAPI {
               );
             }
           }
-
           }
         }
         return data;
@@ -182,7 +181,8 @@ class ChatAPI {
           headers: {"Content-Type": "application/json"},
           body: body);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        var decodedResponse = utf8.decode(response.bodyBytes);
+        final data = jsonDecode(decodedResponse);
         return data;
       } else {
         return {'text': "Error during API request"};
@@ -204,7 +204,8 @@ class ChatAPI {
           headers: {"Content-Type": "application/json"},
           body: body);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        var decodedResponse = utf8.decode(response.bodyBytes);
+        final data = jsonDecode(decodedResponse);
         return data;
       } else {
         return {'text': "Error during API request"};
@@ -224,7 +225,8 @@ class ChatAPI {
           headers: {"Content-Type": "application/json"},
           body: body);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        var decodedResponse = utf8.decode(response.bodyBytes);
+        final data = jsonDecode(decodedResponse);
         return data;
       } else if(response.statusCode == 404){
         return {'msg': "no messages",'data':[]};

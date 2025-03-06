@@ -27,6 +27,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: darkTheme,
       title: "ChatBot-V1.0",
       home: const AuthWrapper(),
