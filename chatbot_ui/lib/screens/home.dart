@@ -187,19 +187,20 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     return GestureDetector(
       onTap: _closeMenu,
       child: Scaffold(
+        backgroundColor: Colors.transparent, // Set Scaffold background to transparent
         appBar: AppBar(
           title: const Text(
             "Chat Application",
             style: TextStyle(
-              fontSize: 18, // Slightly larger for prominence
+              fontSize: 18,
               color: Colors.white,
-              fontWeight: FontWeight.bold, // Bolder for emphasis
-              letterSpacing: 1, // Adds sophistication
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
             ),
           ),
-          backgroundColor: const Color(0xFF082686), // Keep your primary color
-          elevation: 4, // Adds subtle shadow for depth
-          shadowColor: Colors.black.withOpacity(0.3), // Softer shadow
+          backgroundColor: const Color(0xFF6A5AE0),
+          elevation: 4,
+          shadowColor: Colors.black.withOpacity(0.3),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(
               bottom: Radius.circular(16), // Rounded bottom edges
@@ -210,14 +211,13 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
               icon: AnimatedIcons.menu_close,
               progress: _menuAnimation,
               color: Colors.white,
-              size: 28, // Slightly larger icon
+              size: 28,
             ),
             onPressed: _toggleMenu,
-            tooltip: isMenuOpen ? 'Close Menu' : 'Open Menu', // Accessibility
-            splashRadius: 20, // Smaller splash radius for a cleaner tap effect
+            tooltip: isMenuOpen ? 'Close Menu' : 'Open Menu',
+            splashRadius: 20,
           ),
           actions: [
-            // Speech Toggle Button
             IconButton(
               icon: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
@@ -227,7 +227,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                 ),
                 child: Icon(
                   isSpeechEnabled ? Icons.volume_up : Icons.volume_off,
-                  key: ValueKey(isSpeechEnabled), // Ensures animation triggers
+                  key: ValueKey(isSpeechEnabled),
                   color: isSpeechEnabled ? Colors.greenAccent : Colors.white,
                   size: 26,
                 ),
@@ -236,7 +236,6 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
               tooltip: isSpeechEnabled ? 'Disable Speech' : 'Enable Speech',
               splashRadius: 20,
             ),
-            // Clear History Button
             IconButton(
               icon: const Icon(
                 Icons.delete_forever,
@@ -248,21 +247,17 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
               splashRadius: 20,
             ),
           ],
-          centerTitle: true, // Centers the title for symmetry
+          centerTitle: true,
         ),
         body: Stack(
           children: [
             Positioned.fill(
-              child: Image.network(
-                'https://i.pinimg.com/736x/4c/13/8d/4c138d1c8db867f1244cb400dec0e18e.jpg',
+              child: Image.asset(
+                'lib/assets/background.jpg',
                 fit: BoxFit.cover,
               ),
-              // child: Image.asset(
-              //   'lib/assets/background.jpg',
-              //   fit: BoxFit.cover,
-              // ),
             ),
-            Padding(
+            Container(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
@@ -272,7 +267,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                       children: buildMessageList(isLoading),
                     ),
                   ),
-                 ChatInputField(controller: _messageController, onSend: _sendMessage),
+                  ChatInputField(controller: _messageController, onSend: _sendMessage),
                 ],
               ),
             ),
@@ -311,6 +306,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
       ),
     );
   }
+
 
 
   Future<void> _sendMessage() async {
@@ -456,13 +452,13 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(false); // User pressed No
+                Navigator.of(context).pop(false);
               },
               child: const Text('No'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(true); // User pressed Yes
+                Navigator.of(context).pop(true);
               },
               child: const Text('Yes'),
             ),

@@ -25,7 +25,7 @@ class ChatBubble extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: isUser
               ? const LinearGradient(
-            colors: [const Color(0xFF082686),const Color(0xFF082686)],
+            colors: [Color(0xFF6A5AE0),Color(0xFF6A5AE0)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           )
@@ -78,7 +78,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 950), // Total duration for all dots
+      duration: const Duration(milliseconds: 950),
     )..addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         Future.delayed(const Duration(milliseconds: 300), () {
@@ -110,17 +110,16 @@ class _TypingIndicatorState extends State<TypingIndicator>
             builder: (context, child) {
               return Transform.translate(
                 offset: Offset(0, -_getHeightOffset(index)),
-                child: child,
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: _getColor(index),
+                    shape: BoxShape.circle,
+                  ),
+                ),
               );
             },
-            child: Container(
-              width: 6,
-              height: 6,
-              decoration: const BoxDecoration(
-                color: Colors.black,
-                shape: BoxShape.circle,
-              ),
-            ),
           );
         }),
       ),
@@ -128,27 +127,38 @@ class _TypingIndicatorState extends State<TypingIndicator>
   }
 
   double _getHeightOffset(int index) {
-    // Heights increase from left to right
-    List<double> maxHeights = [3, 6, 9, 12];
+    List<double> maxHeights = [3, 6, 9]; // Slight bounce effect per dot
     double progress = _controller.value;
 
-    // Each dot gets 0.25 of total duration (500ms each)
-    double startPoint = index * 0.25; // 0.0, 0.25, 0.5, 0.75
-    double midPoint = startPoint + 0.125; // Halfway point for peak
-    double endPoint = startPoint + 0.25; // End of dot's cycle
+    double startPoint = index * 0.25;
+    double midPoint = startPoint + 0.125;
+    double endPoint = startPoint + 0.25;
 
     if (progress < startPoint) {
-      return 0; // Haven't started moving yet
+      return 0;
     } else if (progress >= endPoint) {
-      return 0; // Back to starting position
+      return 0;
     } else if (progress < midPoint) {
-      // Going up
       double upProgress = (progress - startPoint) / 0.125;
       return maxHeights[index] * upProgress;
     } else {
-      // Going down
       double downProgress = (endPoint - progress) / 0.125;
       return maxHeights[index] * downProgress;
+    }
+  }
+
+  Color _getColor(int index) {
+    double progress = _controller.value;
+    double startPoint = index * 0.25;
+    double endPoint = startPoint + 0.25;
+
+    if (progress < startPoint) {
+      return Colors.grey; // Default inactive color
+    } else if (progress > endPoint) {
+      return Colors.grey;
+    } else {
+      double intensity = (progress - startPoint) / 0.25;
+      return Color.lerp(Colors.grey, Colors.black, intensity)!;
     }
   }
 }
