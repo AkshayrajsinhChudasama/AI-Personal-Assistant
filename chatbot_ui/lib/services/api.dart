@@ -8,9 +8,9 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
 class ChatAPI {
-  //static const apiUrl = "http://10.0.2.2:8000";
+  static const apiUrl = "http://10.0.2.2:8000";
 
-  static const apiUrl = "http://192.168.137.237:8000";
+  // static const apiUrl = "http://192.168.137.237:8000";
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final GoogleSignIn _googleSignIn = GoogleSignIn();

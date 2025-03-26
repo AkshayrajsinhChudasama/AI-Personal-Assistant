@@ -181,7 +181,7 @@ class NotificationService {
   }) async {
     final data = {'eventId': eventId, 'title': title, 'body': body,'history':'Context : $title & $body'};
 
-    // scheduledTime = DateTime.now().add(const Duration(seconds: 5));
+    scheduledTime = DateTime.now().add(const Duration(seconds: 5));
 
     await _scheduleNotification(data, scheduledTime, false, true);
   }

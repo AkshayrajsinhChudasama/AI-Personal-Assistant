@@ -54,8 +54,8 @@ class _ChatInputFieldState extends State<ChatInputField> {
           },
           listenMode: stt.ListenMode.dictation,
           cancelOnError: false,
-          pauseFor: const Duration(seconds: 10), // Mic waits 10s silence before stopping
-          listenFor: const Duration(minutes: 2), // Maximum listen time 2 minutes
+          pauseFor: const Duration(seconds: 10),
+          listenFor: const Duration(minutes: 2),
         );
       }
     } else {
@@ -82,22 +82,41 @@ class _ChatInputFieldState extends State<ChatInputField> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: Column(
         children: [
-          DropdownButton<String>(
-            value: selectedLocaleId,
-            onChanged: (value) {
-              setState(() {
-                selectedLocaleId = value!;
-              });
-            },
-            items: _indianLocales.map((locale) {
-              return DropdownMenuItem(
-                value: locale['locale'],
-                child: Text(locale['name'] ?? locale['locale']!),
-              );
-            }).toList(),
-          ),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center, // Align mic and dropdown
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              Expanded(child:
+              Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: selectedLocaleId,
+                      dropdownColor: Colors.white,
+                      icon: const Icon(Icons.arrow_drop_down, color: Colors.black), // Theme color dropdown icon
+                      style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w500), // Theme text
+                      onChanged: (value) {
+                        setState(() {
+                          selectedLocaleId = value!;
+                        });
+                      },
+                      items: _indianLocales.map((locale) {
+                        return DropdownMenuItem(
+
+                          value: locale['locale'],
+                          child: Text(locale['name'] ?? locale['locale']!,style: TextStyle(color: Colors.black),),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+              ),
+              ),
+              const SizedBox(width: 12,),
               GestureDetector(
                 onTap: _isListening ? _stopListening : _startListening,
                 child: AnimatedContainer(
@@ -134,7 +153,11 @@ class _ChatInputFieldState extends State<ChatInputField> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(

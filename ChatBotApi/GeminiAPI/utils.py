@@ -52,8 +52,7 @@ def generate_search_response(prompt):
 def generalDialog(user_input,chat_history):
   prompt = f"""
 
-     You are a helpful and versatile assistant. You have to answer general knowledge questions, manage user tasks, and handle calendar requests. 
-    
+    You are a helpful and versatile assistant. You have to answer general knowledge questions, manage user tasks, and handle calendar requests.
     
     - can not do multiple task at a time.
     - based on user query you can do following actions
@@ -131,27 +130,39 @@ def messageGenerator(Task):
   """
   return generate_response(prompt=prompt)
 
-def conflictChecker(conflictResult,dataResult,intent):
+def conflictChecker(conflictResult,dataResult,intent,task,response):
   prompt = f"""
     # first task : you are conflict checker.
-
     - you are given with list of task already added and conflict information.
-    - give output isConflict = true if result is true else false;
+    - give output isConflict = true if conflict information is not empty;
     - in text give message need to output to user. 
-    - for given task id in conflict infor find from dataresult and frame beautiful msg without including task id.
+    - if same task exist in dataresult then give duplicate task message.
+    - if task time is in past then also notify it you are given the current date and time.
 
-    # second task : you are message provide which is creative and beautifull to the given task.
-    - give title and body as a output.
+    # second task : 
+      - create notification message which should be provided at the time task starts 
+      which contains good and creative beautiful message related to task and make mood for user to start that task.
+      use task information provided to you.
+      - give title and body as a output.
     
-    # third task : task is given to you and you are going to ask user about the task after 10 minutes
-    - give title and body for that.
-    - eg. how meeting is going,need any help kind of questoins.
+    # third task : 
+      - create notification message which should be provided after some time task starts
+      which contains good and creative beautiful message related to task.
+      -use task information provided to you.
+      - give title and body as output.
+
+    # fourth task:
+     - output response given which should provided to user modify if need and give new text to send to user.
 
     - Context
       - Conflict information:{conflictResult}
       - dataResult:{dataResult}
       - intent:{intent}
-
+      - task : {task} 
+      - Today Date and Day: {current_date} ({current_day})
+      - Current Time: {current_time}
+      - response provided to user : {response}
+    - output response should be json object not array
     - Output response
     {{
       
@@ -165,10 +176,18 @@ def conflictChecker(conflictResult,dataResult,intent):
       # third task
       "title1":"title of intereactive msg by bot to the user"
       "body1":"body of intereactive msg by bot to the user"
+
+      #fourth task
+      "response": modified response if needed.
       eg.
     }}
   """
-  return generate_response(prompt=prompt)
+  res = generate_response(prompt=prompt)
+  print(res)
+  if isinstance(res, list) and res:
+      return res[0]
+  else:
+      return res
 
 def searchToGoogle(user_input,chat_history):
   prompt = f"""

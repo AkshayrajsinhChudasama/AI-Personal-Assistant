@@ -30,8 +30,8 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   bool isMenuOpen = false;
 
   FlutterTts flutterTts = FlutterTts();
-  bool isSpeechEnabled = false; // Track speech button state
-  bool isSpeaking = false; // Track if speech is currently in progress
+  bool isSpeechEnabled = false;
+  bool isSpeaking = false;
 
   @override
   void initState() {

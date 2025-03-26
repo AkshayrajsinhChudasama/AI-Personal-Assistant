@@ -59,8 +59,10 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
                     payload = response.get('payload', {})
                     if all(k in payload for k in ['startdate', 'starttime', 'enddate', 'endtime']):
                         inter_conflict = check_task_conflict(payload,tasks)
-                        conflict_check = conflictChecker(inter_conflict, tasks, 'add')[0]
+                        conflict_check = conflictChecker(inter_conflict, tasks, 'add',payload,response['text'])
+                        print(conflict_check)
                         if not conflict_check.get('isConflict'):
+                            response['text'] = conflict_check['response']
                             event_info = create_google_calendar_event(
                                 access_token,
                                 payload.get('summary', ''),
@@ -101,9 +103,9 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
                     if updated_payload.get('addedToCalendar') and task_id:
                         tasks = [t for t in tasks if t.get('task_id') != task_id]
                         inter_conflict = check_task_conflict(updated_payload,tasks)
-                        conflict_check = conflictChecker(inter_conflict, tasks, 'update')[0]
-                        
+                        conflict_check = conflictChecker(inter_conflict, tasks, 'update',updated_payload,response['text'])
                         if not conflict_check.get('isConflict'):
+                            response['text'] = conflict_check['response']
                             if response.get('calendarAction') == 'add':
                                 event_info = create_google_calendar_event(
                                     access_token,
@@ -162,9 +164,9 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
             print(response)
         await insertMessage(email,response['text'],'bot')
         return response
-    except Exception as e:
-        
+    except Exception as e:        
         logger.error(f"Unexpected error: {e}")
+
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 class msg(BaseModel):
