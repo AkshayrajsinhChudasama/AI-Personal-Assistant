@@ -71,6 +71,7 @@ def generalDialog(user_input,chat_history):
         - if the updated event is added to calendar and update is on timing then updated timing must be in future with respect to current timing.
       - in case of deleting task
         - important -> take confirmation from user that the action can not be undone and specify task that you are going to delete.
+        - while asking for confirmation make dbAction to noAction
     - if user wants to retrive task then give in setence format rather than json format.
     - for performing corrsponding action to database before response sended to user make dbAction = action to be performed and isInfoIncomplete = False.
     - never specify anyting regarding Changes saved to database but notification not allowed. you can allow notification in the app settings. in your response.
@@ -130,14 +131,14 @@ def messageGenerator(Task):
   """
   return generate_response(prompt=prompt)
 
-def conflictChecker(conflictResult,dataResult,intent,task,response):
+def conflictChecker(conflictResult,dataResult,intent,task,response,pastResult):
   prompt = f"""
     # first task : you are conflict checker.
     - you are given with list of task already added and conflict information.
     - give output isConflict = true if conflict information is not empty;
     - in text give message need to output to user. 
     - if same task exist in dataresult then give duplicate task message.
-    - if task time is in past then also notify it you are given the current date and time.
+    - if pastrestult is true it means the task starting time is in past so give message accroding to that to user.
 
     # second task : 
       - create notification message which should be provided at the time task starts 
@@ -156,6 +157,7 @@ def conflictChecker(conflictResult,dataResult,intent,task,response):
 
     - Context
       - Conflict information:{conflictResult}
+      - is start time in past : {pastResult}
       - dataResult:{dataResult}
       - intent:{intent}
       - task : {task} 

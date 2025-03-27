@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import FastAPI, HTTPException, Depends, Header
 from pydantic import BaseModel
 from database.utils1 import deleteMessages, insertTask, retriveAllTask, updateTask, deleteTask,insertMessage,retriveMessages
@@ -32,6 +33,14 @@ def extract_access_token(authorization: str = Header(...)):
         return match.group(1)
     raise HTTPException(status_code=400, detail="Invalid Authorization header format")
 
+def is_past_task(startdate: str, starttime: str) -> bool:
+    try:
+        task_datetime = datetime.strptime(startdate + ' ' + starttime, '%Y-%m-%d %H:%M')
+        return task_datetime < datetime.now() 
+    except ValueError:
+        print("Invalid date or time format")
+        return False 
+
 @app.post("/chat")
 async def process_query(input: QueryInput, authorization: str = Depends(extract_access_token)):
     try:
@@ -59,7 +68,8 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
                     payload = response.get('payload', {})
                     if all(k in payload for k in ['startdate', 'starttime', 'enddate', 'endtime']):
                         inter_conflict = check_task_conflict(payload,tasks)
-                        conflict_check = conflictChecker(inter_conflict, tasks, 'add',payload,response['text'])
+                        is_past = is_past_task(payload['startdate'], payload['starttime'])
+                        conflict_check = conflictChecker(inter_conflict, tasks, 'add',payload,response['text'],is_past)
                         print(conflict_check)
                         if not conflict_check.get('isConflict'):
                             response['text'] = conflict_check['response']
@@ -103,7 +113,8 @@ async def process_query(input: QueryInput, authorization: str = Depends(extract_
                     if updated_payload.get('addedToCalendar') and task_id:
                         tasks = [t for t in tasks if t.get('task_id') != task_id]
                         inter_conflict = check_task_conflict(updated_payload,tasks)
-                        conflict_check = conflictChecker(inter_conflict, tasks, 'update',updated_payload,response['text'])
+                        is_past = is_past_task(updated_payload['startdate'], updated_payload['starttime'])
+                        conflict_check = conflictChecker(inter_conflict, tasks, 'update',updated_payload,response['text'],is_past)
                         if not conflict_check.get('isConflict'):
                             response['text'] = conflict_check['response']
                             if response.get('calendarAction') == 'add':
